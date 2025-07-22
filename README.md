@@ -68,8 +68,8 @@
         generateNewBlock();
     
         int key = 0;
-        __int drop_delay = 500000; // 블럭 낙하 주기: 500ms__
-        int input_delay = 10000; // 키 입력 처리 주기: 10ms__
+        **int drop_delay = 500000; // 블럭 낙하 주기: 500ms**
+        **int input_delay = 10000; // 키 입력 처리 주기: 10ms**
         int elapsed_time = 0;
     
         struct timeval prev, curr;
