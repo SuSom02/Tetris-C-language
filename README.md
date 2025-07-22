@@ -53,6 +53,7 @@
     그래서 전 고민하다가 블럭이 내려오는 시간과 키 입력 처리를 받는 시간을 따로 돌아가게끔 구성을 했습니다.
 
     [실적용]
+    ** **로 싸져있는 부분을 봐주시면 됩니다.
     int game_start(void) {
         checkTerminalSize();
     	pointAndTempResultInit();
@@ -76,10 +77,10 @@
         gettimeofday(&prev, NULL); //커널이 이 순간의 시스템 시계를 읽어옴 즉 지나면 갱신되지 않음
     
         while (1) {
-            gettimeofday(&curr, NULL); // 매 순간마다 커널이 시스템 시계를 읽어옴
-            int diff = (curr.tv_sec - prev.tv_sec) * 1000000 + (curr.tv_usec - prev.tv_usec);  // tv_sec: 초 (seconds) || tv_usec: 마이크로초 (microseconds)
-            prev = curr; // 지난 시간과 현재까지 흘러온 시간 차 계산 후 다시 현재로 돌림
-            elapsed_time += diff;
+            **gettimeofday(&curr, NULL); // 매 순간마다 커널이 시스템 시계를 읽어옴**
+            **int diff = (curr.tv_sec - prev.tv_sec) * 1000000 + (curr.tv_usec - prev.tv_usec);  // tv_sec: 초 (seconds) || tv_usec: 마이크로초 (microseconds)**
+            **prev = curr; // 지난 시간과 현재까지 흘러온 시간 차 계산 후 다시 현재로 돌림**
+            **elapsed_time += diff;**
     
             char (*block)[4] = getCurrentBlock();
             eraseBlock(x, y, block);
@@ -137,7 +138,7 @@
             }
     
             // 블럭 자동 낙하
-            if (elapsed_time >= drop_delay) {
+            **if (elapsed_time >= drop_delay) {
                 if (!checkCollision(x, y + 1, block)) {
                     y++;
                 } else {
@@ -147,7 +148,7 @@
                     if (isGameOver()) break;
                 }
                 elapsed_time = 0; // 타이머 초기화
-            }
+            }**
     
             drawFrame();
             drawGhostBlock(x, y, getCurrentBlock());
@@ -158,7 +159,7 @@
     		 *usleep(input_delay); 주기는 저대로 두고 
     		 *차라리 블럭이 내려올 시기임을 알려주는 타이머를 추가 후 타이머가 울리면 블럭이 내려오게 하자.
     		 */
-            usleep(input_delay);
+            **usleep(input_delay);**
         }
     
         printf("\x1b[?25h"); // 커서 다시 보이게
