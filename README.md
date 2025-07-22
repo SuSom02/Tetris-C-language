@@ -1,5 +1,5 @@
 ﻿# Tetris-C-language
-    대학에서 주어진 과제로 C 언어로 테트리스를 만들어봤습니다.
+    대학에서 주어진 과제로 C 언어를 이용해 테트리스를 만들어봤습니다.
 
 # What I Learned While Building a Tetris Game
 ```
