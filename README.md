@@ -1,11 +1,9 @@
 ﻿# Tetris-C-language
-    대학 과제로 인해 C 언어로 테트리스를 만들어봤습니다.
+    대학에서 주어진 과제로 C 언어로 테트리스를 만들어봤습니다.
 
-    하면서 아래와 같은 알고리즘을 깨닫고 갑니다.
-
+# What I Learned While Building a Tetris Game
 ```
-    1. Fisher–Yates Shuffle
-    용도: 블럭 생성시 랜덤성은 유지하되 최대한 연속되는 패턴의 블럭이 안 나오게끔 하고자 추가하게 되었습니다.
+    1. 블럭 생성시 랜덤성은 유지하되 최대한 연속되는 패턴의 블럭이 안 나오게끔 하고자 [Fisher–Yates Shuffle] 알고리즘을 찾아서 이용했습니다.
 
     void shuffleBag(void) {
         for (int i = 0; i < 7; i++) blockBag[i] = i;
