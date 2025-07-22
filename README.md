@@ -3,7 +3,7 @@
 
 # What I Learned While Building a Tetris Game
 ```
-    1. 블럭 생성시 랜덤성은 유지하되 최대한 연속되는 패턴의 블럭이 안 나오게끔 하고자 [Fisher–Yates Shuffle] 알고리즘을 찾아서 이용했습니다.
+1. 블럭 생성시 랜덤성은 유지하되 최대한 연속되는 패턴의 블럭이 안 나오게끔 하고자 [Fisher–Yates Shuffle] 알고리즘을 찾아서 이용했습니다.
 
     void shuffleBag(void) {
         for (int i = 0; i < 7; i++) blockBag[i] = i;
@@ -33,6 +33,138 @@
     
         block_state = 0;
         x = 3; y = 0;
+    }
+    
+```
+```
+2. 블럭이 한칸 씩 내려오는 것과 키 입력 처리 주기를 따로 두지 않으면 발생하는 문제
+
+    초기 프로토 타입 때 아래 코드와 같은 방식으로 임시 제작을 했습니다.
+        generateNewBlock();
+        while() {
+            keystroke processing();
+            go down one block();
+            usleep(delay);
+        }
+    하지만 이러면 usleep(delay);에서
+    delay 시간이 길수록 블럭이 천천히 내려와서 게임 난이도는 쉬워지나 다음 키 입력 처리까지 반응 느려져서 게임이 마치 작동을 안하는 것처럼 인식이 되는 반면
+    delay 시간이 짧을수록 블럭이 빠르게 내려오는 대신 다음 키 입력 처리 반응 빨라져서 게임이 원활하게 작동하는 인식을 받을 수 있었습니다.
+
+    그래서 전 고민하다가 블럭이 내려오는 시간과 키 입력 처리를 받는 시간을 따로 돌아가게끔 구성을 했습니다.
+
+    [실적용]
+    int game_start(void) {
+        checkTerminalSize();
+    	pointAndTempResultInit();
+        system("clear");
+        disableEcho();
+        printf("\x1b[?25l"); // 커서 숨김
+        srand(time(NULL));
+    
+        char backup_table[21][10];
+        memcpy(backup_table, tetris_table, sizeof(tetris_table));
+        memset(tetris_table, 0, sizeof(tetris_table));
+    
+        generateNewBlock();
+    
+        int key = 0;
+        __int drop_delay = 500000; // 블럭 낙하 주기: 500ms
+        int input_delay = 10000; // 키 입력 처리 주기: 10ms__
+        int elapsed_time = 0;
+    
+        struct timeval prev, curr;
+        gettimeofday(&prev, NULL); //커널이 이 순간의 시스템 시계를 읽어옴 즉 지나면 갱신되지 않음
+    
+        while (1) {
+            gettimeofday(&curr, NULL); // 매 순간마다 커널이 시스템 시계를 읽어옴
+            int diff = (curr.tv_sec - prev.tv_sec) * 1000000 + (curr.tv_usec - prev.tv_usec);  // tv_sec: 초 (seconds) || tv_usec: 마이크로초 (microseconds)
+            prev = curr; // 지난 시간과 현재까지 흘러온 시간 차 계산 후 다시 현재로 돌림
+            elapsed_time += diff;
+    
+            char (*block)[4] = getCurrentBlock();
+            eraseBlock(x, y, block);
+    
+            if (kbhit()) {
+                key = getKey();
+                int new_x = x, new_y = y, new_state = block_state;
+    
+                if (key == 'j' || key == 'J') new_x--;
+                else if (key == 'l' || key == 'L') new_x++;
+                else if (key == 'k' || key == 'K') new_y++;
+                else if (key == 'i' || key == 'I') {
+                    new_state = (block_state + 1) % 4;
+    				// 회전 후 충돌이 없는지 검토
+                    char (*test_block)[4];
+                    switch (block_number) {
+                        case I_BLOCK: test_block = i_block[new_state]; break;
+                        case T_BLOCK: test_block = t_block[new_state]; break;
+                        case S_BLOCK: test_block = s_block[new_state]; break;
+                        case Z_BLOCK: test_block = z_block[new_state]; break;
+                        case L_BLOCK: test_block = l_block[new_state]; break;
+                        case J_BLOCK: test_block = j_block[new_state]; break;
+                        case O_BLOCK: test_block = o_block[new_state]; break;
+                    }
+    
+    				// 벽 근처에서 회전 시 충돌나면 안쪽으로 밀어줌
+                    if (!checkCollision(x, y, test_block)) {
+                        block_state = new_state;
+                    } else if (!checkCollision(x - 1, y, test_block)) {
+                        x--; block_state = new_state;
+                    } else if (!checkCollision(x + 1, y, test_block)) {
+                        x++; block_state = new_state;
+                    } else if (!checkCollision(x - 2, y, test_block)) {
+                        x -= 2; block_state = new_state;
+                    } else if (!checkCollision(x + 2, y, test_block)) {
+                        x += 2; block_state = new_state;
+                    }
+                    continue;
+                }
+                else if (key == 'a' || key == 'A') {
+                    while (!checkCollision(x, y + 1, block)) {
+                        y++;
+                    }
+                    fixBlock(x, y, block);
+                    clearLines();
+                    generateNewBlock();
+                    if (isGameOver()) break;
+                    continue;
+                }
+                else if (key == 'p' || key == 'P') break;
+    
+                if (!checkCollision(new_x, new_y, block_number == O_BLOCK ? o_block[new_state] : getCurrentBlock())) {
+                    x = new_x; y = new_y; block_state = new_state;
+                }
+            }
+    
+            // 블럭 자동 낙하
+            if (elapsed_time >= drop_delay) {
+                if (!checkCollision(x, y + 1, block)) {
+                    y++;
+                } else {
+                    fixBlock(x, y, block);
+                    clearLines();
+                    generateNewBlock();
+                    if (isGameOver()) break;
+                }
+                elapsed_time = 0; // 타이머 초기화
+            }
+    
+            drawFrame();
+            drawGhostBlock(x, y, getCurrentBlock());
+            drawBlock(x, y, getCurrentBlock());
+    		/*
+    		 *usleep(200000); 이러면 입력 반응따라 블럭이 내려오는 시간도 바뀜... 여길 수정해야 할 듯
+    		 *[수정안]
+    		 *usleep(input_delay); 주기는 저대로 두고 
+    		 *차라리 블럭이 내려올 시기임을 알려주는 타이머를 추가 후 타이머가 울리면 블럭이 내려오게 하자.
+    		 */
+            usleep(input_delay);
+        }
+    
+        printf("\x1b[?25h"); // 커서 다시 보이게
+        showRecordAndInputName();
+        restoreTerminal();
+        return 1;
     }
     
 ```
